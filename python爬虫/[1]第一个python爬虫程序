@@ -1,0 +1,22 @@
+from urllib import request
+response = request.urlopen('http://www.baidu.com')
+html = response.read().decode('utf-8')
+print(html)
+
+1) request.urlopen(url, timeout)
+# urlopen() 表示向网站发起请求并获取响应对象
+# urlopen() 有两个参数：
+  url：表示要爬取数据的url 地址
+  timeout：设置等待超时时间，指定时间内未得到响应则抛出超时异常
+  
+html响应对象方法：
+bytes = response.read() #read()返回结果为 bytes数据类型
+string = response.read().decode() # decode() 将字节转换为 string 类型
+url = response.geturl() #返回响应对象的 URL 地址
+code = response.getcode() #返回请求时的 HTTP 响应码
+
+2) 编码解码操作
+# 字符串转换为字节码
+string.encode("utf-8")
+# 字节码转换为字符串
+bytes.decode("utf-8")
