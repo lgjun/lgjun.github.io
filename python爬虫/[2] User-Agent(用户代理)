@@ -1,0 +1,62 @@
+  User-Agent 即用户代理，简称 UA, 是一个特殊字符串头。网站服务器通过识别 “UA” 来确定用户所使用的操作系统版本、CPU类型、浏览器版本等信息. 而网站服务器通过判断UA 
+来给客户端发送不同的页面.
+  网络爬虫使用程序代码来访问网站，而非人类亲自点击访问，因此爬虫程序也被称为“网络机器人”. 网站通过识别请求头中 User-Agent 信息来判断是否是爬虫访问网站.
+  
+import urllib.request
+
+response = urllib.request.urlopen('http://httpbin.org/get')
+html = response.read().decode()
+print(html)
+输出：
+{
+  "args": {}, 
+  "headers": {
+    "Accept-Encoding": "identity", 
+    "Host": "httpbin.org", 
+    "User-Agent": "Python-urllib/3.7", 
+    "X-Amzn-Trace-Id": "Root=1-6205fd2c-00981a4146d2831a6b441da8"
+  }, 
+  "origin": "180.158.50.123", 
+  "url": "http://httpbin.org/get"
+}
+输出结果中，User-Agent是 Python-urllib/3.7，是爬虫程序访问网站，重构User-Agent，将其伪装成“浏览器”访问网站.
+
+重构代码：
+from urllib import request
+#定义变量： URL 和 headers
+url = 'http://httpbin.org/get'
+#重构请求头，伪装成 Mac狐火浏览器访问
+headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:65.0) Gecko/20100101 Firefox/65.0'}
+
+#1. 创建请求对象，包装UA信息
+req = request.Request(url=url,headers=headers)
+#2、 发送请求，获取响应对象
+res = request.urlopen(req)
+#3. 提取响应内容
+html = res.read().decode('utf-8')
+print(html)
+
+输出结果：
+{
+  "args": {}, 
+  "headers": {
+    "Accept-Encoding": "identity", 
+    "Host": "httpbin.org", 
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:65.0) Gecko/20100101 Firefox/65.0", 
+    "X-Amzn-Trace-Id": "Root=1-6205fe1e-34d2d6b4758c71f150eb31db"
+  }, 
+  "origin": "180.158.50.123", 
+  "url": "http://httpbin.org/get"
+}
+
+构建 UA 代理池，使用第三方的模块来随机获取浏览器UA信息，该模块需要单独安装，安装方式：pip install fake-useragent
+from fake_useragent import UserAgent
+#实例化一个对象
+ua = UserAgent()
+# 随机获取一个ie浏览器ua
+print(ua.ie)
+print(ua.firefox)
+
+输出结果：
+Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0
+Mozilla/5.0 (Windows NT 6.1; WOW64; rv:21.0) Gecko/20130331 Firefox/21.0
