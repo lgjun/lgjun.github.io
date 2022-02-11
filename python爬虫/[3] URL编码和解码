@@ -1,0 +1,51 @@
+1. python 的标准库 urllib.parse 模块中提供了用来编码和解码的方法，分别是 urlencode() 与 unquote() 方法
+  urlencode() 该方法实现了对 url 地址的编码操作
+  unquote() 该方法将编码后的 url 地址进行还原，被称为解码
+  
+from urllib import parse
+
+query_string = {'wd' : '爬虫'}
+result = parse.urlencode(query_string)
+url = 'http://www.baidu.com/s?{}'.format(result)
+print(url)
+
+输出：
+http://www.baidu.com/s?wd=%E7%88%AC%E8%99%AB
+
+from urllib import parse
+
+url = 'http://www.baidu.com/s?wd={}'
+word = input('请输入要搜索的内容：')
+
+query_string = parse.quote(word)
+print(url.format(query_string))
+
+输出：
+请输入要搜索的内容：百度www.baidu.com
+http://www.baidu.com/s?wd=%E7%99%BE%E5%BA%A6www.baidu.com
+
+quote()只能对字符串编码，而urlencode()可直接对查询字符串字典进行编码：
+urllib.parse.urlencode({'key':'value'}) # 字典
+urllib.parse.quote(string)  # 字符串
+
+2. 解码unquote(string):
+from urllib import parse
+
+string = '%E7%88%AC%E8%99%AB'
+result = parse.unquote(string)
+print(result)
+
+输出：爬虫
+
+3. URL 地址拼接方式
+# 1、字符串相加
+  baseurl = 'http://www.baidu.com/s?'
+  params='wd=%E7%88%AC%E8%99%AB'
+  url = baseurl + params
+# 2、字符串格式化（占位符）
+  params='wd=%E7%88%AC%E8%99%AB'
+  url = 'http://www.baidu.com/s?%s'% params
+# 3、format()方法
+  url = 'http://www.baidu.com/s?{}'
+  params='wd=%E7%88%AC%E8%99%AB'
+  url = url.format(params)
