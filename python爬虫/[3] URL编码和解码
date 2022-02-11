@@ -49,3 +49,5 @@ print(result)
   url = 'http://www.baidu.com/s?{}'
   params='wd=%E7%88%AC%E8%99%AB'
   url = url.format(params)
+
+来源于http://c.biancheng.net/python_spider/crawl-webpage.html，如有侵权，联系删除
