@@ -1,0 +1,146 @@
+# vmd 统计蛋白、DNA周围5埃范围内的CA、LIG
+# vmd.tcl, 统计指定范围的CA、LIG, 输出到pdb文件中
+set sel1 [atomselect top "same residue as {within 5 of protein} and resname CA"]
+set sel2 [atomselect top "same residue as {within 5 of nucleic} and resname CA"]
+set sel3 [atomselect top "same residue as {within 5 of protein} and resname LIG"]
+set sel4 [atomselect top "same residue as {within 5 of nucleic} and resname LIG"]
+$sel1 writepdb proCA.pdb
+$sel2 writepdb nucCA.pdb
+$sel3 writepdb proLIG.pdb
+$sel4 writepdb nucLIG.pdb
+exit
+
+# 批量处理多个pdb文件
+for file in $(ls |grep .pdb)
+do
+        name=${file%.*}
+        mkdir $name
+        mv $file $name; cp 5Avmd.tcl $name
+        cp distance.sh $name
+        cd $name
+
+        vmd $file -dispdev none -e vmd.tcl    # vmd 调用tcl脚本, 不弹出vmd的三个窗口
+        # stat 5A CA LIG
+        cat nucCA.pdb proCA.pdb >> CA.pdb
+        cat nucLIG.pdb proLIG.pdb >> LIG.pdb
+
+        grep ATOM CA.pdb > CACA.pdb
+        less CACA.pdb |awk '{print $5,$6,$7,$8}'|uniq > CACAuniq.pdb
+
+        grep ATOM LIG.pdb |grep P > LIGP.pdb
+        awk '{print $5,$6,$7,$8}' LIGP.pdb |uniq > LIGPuniq.pdb
+
+        sh distance.sh    # 根据原子坐标, 计算pdb文件中两原子之间的距离
+
+
+
+        cd ../
+done
+
+# distance.sh内的代码
+#!/bin/bash
+
+canum=`wc -l CACAuniq.pdb|awk '{print $1}'` # 计算pdb文件中有多少行
+pnum=`wc -l LIGPuniq.pdb|awk '{print $1}'`
+
+echo $canum $pnum >> capnum
+min=`less capnum | sort -k1n |sed -n '1p'`
+max=`less capnum | sort -k1n |sed -n '2p'`
+if test $max = $canum
+then
+        for i in $(seq $canum)
+        do
+                ca=`sed -n "$i p" CACAuniq.pdb | awk '{print $1}'`    # 输出某行某列的数据
+                x1=`sed -n "$i p" CACAuniq.pdb | awk '{print $2}'`
+                y1=`sed -n "$i p" CACAuniq.pdb | awk '{print $3}'`
+                z1=`sed -n "$i p" CACAuniq.pdb | awk '{print $4}'`
+                for j in $(seq $pnum)
+                do
+                        p=`sed -n "$j p" LIGPuniq.pdb | awk '{print $1}'`
+                        x2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $2}'`
+                        y2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $3}'`
+                        z2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $4}'`
+
+                        dx=$(echo "($x1-$x2)*($x1-$x2)" | bc)
+                        dy=$(echo "($y1-$y2)*($y1-$y2)" | bc)
+                        dz=$(echo "($z1-$z2)*($z1-$z2)" | bc)
+                        d=$(echo |awk "{print sqrt($dx+$dy+$dz)}")    # awk可进行算数运算
+
+                        echo "$ca-CA-$p-P $d" >> distance.csv
+                done
+        done
+else
+        for j in $(seq $pnum)
+        do
+                p=`sed -n "$j p" LIGPuniq.pdb | awk '{print $1}'`
+                x2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $2}'`
+                y2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $3}'`
+                z2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $4}'`
+                for i in $(seq $canum)
+                do
+
+                        ca=`sed -n "$i p" CACAuniq.pdb | awk '{print $1}'`
+                        x1=`sed -n "$i p" CACAuniq.pdb | awk '{print $2}'`
+                        y1=`sed -n "$i p" CACAuniq.pdb | awk '{print $3}'`
+                        z1=`sed -n "$i p" CACAuniq.pdb | awk '{print $4}'`
+
+                        dx=$(echo "($x1-$x2)*($x1-$x2)" | bc)
+                        dy=$(echo "($y1-$y2)*($y1-$y2)" | bc)
+                        dz=$(echo "($z1-$z2)*($z1-$z2)" | bc)
+                        d=$(echo |awk "{print sqrt($dx+$dy+$dz)}")
+
+                        echo "$ca-CA-$p-P $d" >> distance.csv
+                done
+        done
+fi
+# distance.csv文件中包含哪个CA和哪个P形成的距离是多少, 要筛选距离小于3.5埃对应的CA、P;
+# shell不能进行复数比较, 所以写python脚本提取小于3.5埃数据;
+# distance.py, 把CA、P残基序号与距离数据分隔开, 分别保存到35Aname.txt、35Adistance.txt;
+import pandas as pd
+
+data = pd.read_csv(r'distance-sort-uniq.csv',header=None)
+
+total = len(open('distance-sort-uniq.csv').readlines())
+
+with open("35Aname.txt",'wt+') as f:
+    for i in range(total):
+        dis = data.iloc[i,1]
+        if dis < 3.5:
+            stat1 = data.iloc[i,0]
+            f.write(stat1+"\n")
+            f.close
+
+with open("35Adistance.txt",'wt+') as f1:
+    for i in range(total):
+        dis = data.iloc[i,1]
+        if dis < 3.5:
+            stat2 = data.iloc[i,1]
+            f1.write(str(stat2)+"\n")
+            f1.close
+
+# 调用python脚本, 得到小于3.5埃对应的CA、P随时间的数量变化;
+# 批量处理distance.csv, 创建distance-analysis, 所有的分析都在该文件夹下进行, 这样文件夹看起来不会太乱;
+
+#!/bin/bash
+
+for file in $(ls | grep md)
+do
+
+        cd $file
+        mkdir distance-analysis
+        less distance.csv | sort -k2n| uniq > distance-analysis/distance-sort-uniq.csv
+        sed -i "s/ /,/g" distance-analysis/distance-sort-uniq.csv
+        cd distance-analysis
+        cp ../../distance.py ./
+        python distance.py
+
+        less 35Aname.txt| awk -v FS='-' '{print $1}' |sort |uniq > CAname
+        less 35Aname.txt| awk -v FS='-' '{print $3}' |sort |uniq > LIGname
+
+        canum=`wc -l CAname | awk '{print $1}'`
+        lignum=`wc -l LIGname | awk '{print $1}'`
+
+        echo $file $canum $lignum > $file-CAP.csv
+        cp $file-CAP.csv ../../
+        cd ../../
+done
