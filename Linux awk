@@ -1,0 +1,150 @@
+1. awk 概述
+awk 是一种解释型编程语言，专为文本处理、生成格式化文本报告、执行算数运算、执行字符串操作等;
+
+2. awk 工作流程
+awk遵循简单的工作流程- 读取、执行、重复；
+读取：awk从输入流（文件、管道或标准输入）中读取一行并将其存储在内存中;
+执行：所有awk命令都按顺序应用于输入，默认情况下，awk 在每一行上执行命令;
+重复：这个过程是一直重复，直到文件结束;
+
+BEGIN 块：
+语法：BEGIN {awk-commands}
+BEGIN块在程序启动时执行, 它只执行一次。这是初始化变量的好地方。BEGIN是AWK的关键词，因此必须是大写的。BEGIN是可选的。
+
+Body 块
+语法：/pattern/ {awk-commands}
+body 块在每个输入行上应用awk 命令，默认情况下, awk在每一行执行命令。
+
+END 块：
+语法：END {awk-commands}
+END 块在程序结束时执行, END是awk的关键词，必须是大写。END块是可选的。
+
+3. awk使用
+awk 可以直接从命令行或以包含awk命令的文本文件
+命令行：awk [option] file
+程序文件：awk [options] -f file # awk -f command.awk marks.txt
+
+终端输出awk参数：
+(base) [user@localhost pdb-net]$ awk -h
+Usage: awk [POSIX or GNU style options] -f progfile [--] file ...
+Usage: awk [POSIX or GNU style options] [--] 'program' file ...
+POSIX options:          GNU long options: (standard)
+        -f progfile             --file=progfile
+        -F fs                   --field-separator=fs
+        -v var=val              --assign=var=val
+Short options:          GNU long options: (extensions)
+        -b                      --characters-as-bytes
+        -c                      --traditional
+        -C                      --copyright
+        -d[file]                --dump-variables[=file]
+        -D[file]                --debug[=file]
+        -e 'program-text'       --source='program-text'
+        -E file                 --exec=file
+        -g                      --gen-pot
+        -h                      --help
+        -i includefile          --include=includefile
+        -l library              --load=library
+        -L[fatal|invalid]       --lint[=fatal|invalid]
+        -M                      --bignum
+        -N                      --use-lc-numeric
+        -n                      --non-decimal-data
+        -o[file]                --pretty-print[=file]
+        -O                      --optimize
+        -p[file]                --profile[=file]
+        -P                      --posix
+        -r                      --re-interval
+        -s                      --no-optimize
+        -S                      --sandbox
+        -t                      --lint-old
+        -V                      --version
+
+To report bugs, see node `Bugs' in `gawk.info'
+which is section `Reporting Problems and Bugs' in the
+printed version.  This same information may be found at
+https://www.gnu.org/software/gawk/manual/html_node/Bugs.html.
+PLEASE do NOT try to report bugs by posting in comp.lang.awk.
+
+gawk is a pattern scanning and processing language.
+By default it reads standard input and writes standard output.
+
+Examples:
+        gawk '{ sum += $1 }; END { print sum }' file
+        gawk -F: '{ print $1 }' /etc/passwd
+
+4. 示例
+文件marks.txt中包含的内容：
+1) Amit     Physics   80
+2) Rahul    Maths     90
+3) Shyam    Biology   87
+4) Kedar    English   85
+5) Hari     History   89
+
+[user@localhost test]$awk '{print $3"\t"$4}' marks.txt  # 输出指定行, 以制表符隔开
+Physics 80
+Maths   90
+Biology 87
+English 85
+History 89
+
+[user@localhost test]$awk '{print $0}' marks.txt  # 打印所有行
+1) Amit     Physics   80
+2) Rahul    Maths     90
+3) Shyam    Biology   87
+4) Kedar    English   85
+5) Hari     History   89
+
+[user@localhost test]$awk '/a/ {print $0}' marks.txt  # 打印所有匹配 a 的行
+2) Rahul    Maths     90
+3) Shyam    Biology   87
+4) Kedar    English   85
+5) Hari     History   89
+
+[user@localhost test]$awk '/a/ {print $3 "\t" $4}' marks.txt  # 模式匹配成功后，awk默认打印整条记录，但可以指示awk仅打印某些字段
+Maths   90
+Biology 87
+English 85
+History 89
+
+[user@localhost test]$awk '/a/ {print $4 "\t" $3}' marks.txt  #按任意顺序打印列
+90      Maths
+87      Biology
+85      English
+89      History
+
+[user@localhost test]$awk '/a/{++x} END {print "count = ", x}' marks.txt  # 计算和打印模式匹配成功的行数
+count =  4
+
+5. awk的内置变量
+FS：表示（输入）字段分隔符，默认值是空格，也可以使用-F命令行选项来更改它
+[user@localhost test]$awk -F ',' '{print $1,$2}' marks.txt
+1) Amit
+2) Rahul
+3) Shyam
+4) Kedar
+5) Hari
+
+NF：表示当前记录中的字段数
+NR：表示当前记录的编号
+FNR：当awk对多个文件进行操作时，FNR很有用
+OFS：表示输出字段分隔符，默认值是空格
+ORS：表示输出记录分隔符，默认值是换行符
+RS：表示输入记录分隔符，默认值是换行符
+$0：代表整个输入记录
+$n：表示当前记录中的第n个字段，其中字段由FS分隔
+
+6. awk支持运算符
+# 加减乘除运算符
+(base) [user@localhost pdb-net]$ echo | awk '{print 3+2}'
+5
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12+23.2}'
+26.32
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12*23.2}'
+72.384
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12**23.2}'
+2.91331e+11
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12-23.2}'
+-20.08
+
+#递增递减运算符
+#赋值运算符
+#关系运算符
