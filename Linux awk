@@ -148,3 +148,5 @@ $n：表示当前记录中的第n个字段，其中字段由FS分隔
 #递增递减运算符
 #赋值运算符
 #关系运算符
+
+参考链接：https://w3schools.cn/awk/awk_operators.html
