@@ -1,0 +1,40 @@
+# awk 计算加减乘除
+# awk 支持整数、小数运算
+(base) [user@localhost pdb-net]$ echo | awk '{print 3+2}'
+5
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12+23.2}'
+26.32
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12-23.2}'
+-20.08
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12*23.2}'
+72.384
+(base) [user@localhost pdb-net]$ echo | awk '{print 3.12**23.2}'
+2.91331e+11
+
+# bc 类似计算器
+# 通过管道符
+for j in $(seq $pnum)
+        do
+                p=`sed -n "$j p" LIGPuniq.pdb | awk '{print $1}'`
+                x2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $2}'`
+                y2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $3}'`
+                z2=`sed -n "$j p" LIGPuniq.pdb | awk '{print $4}'`
+                for i in $(seq $canum)
+                do
+
+                        ca=`sed -n "$i p" CACAuniq.pdb | awk '{print $1}'`
+                        x1=`sed -n "$i p" CACAuniq.pdb | awk '{print $2}'`
+                        y1=`sed -n "$i p" CACAuniq.pdb | awk '{print $3}'`
+                        z1=`sed -n "$i p" CACAuniq.pdb | awk '{print $4}'`
+
+                        dx=$(echo "($x1-$x2)*($x1-$x2)" | bc)
+                        dy=$(echo "($y1-$y2)*($y1-$y2)" | bc)
+                        dz=$(echo "($z1-$z2)*($z1-$z2)" | bc)
+                        d=$(echo |awk "{print sqrt($dx+$dy+$dz)}")
+
+                        echo "$ca-CA-$p-P $d" >> distance.csv
+                done
+        done
+
+# 算数扩展式
+$((expression))
